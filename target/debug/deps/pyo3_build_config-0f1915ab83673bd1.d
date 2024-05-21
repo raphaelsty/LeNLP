@@ -1,0 +1,14 @@
+/Users/raphaelsourty/Documents/github/antelope/target/debug/deps/libpyo3_build_config-0f1915ab83673bd1.rmeta: /Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/lib.rs /Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/errors.rs /Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/impl_.rs /Users/raphaelsourty/Documents/github/antelope/target/debug/build/pyo3-build-config-8d6d8b2c3337063b/out/pyo3-build-config-file.txt /Users/raphaelsourty/Documents/github/antelope/target/debug/build/pyo3-build-config-8d6d8b2c3337063b/out/pyo3-build-config.txt
+
+/Users/raphaelsourty/Documents/github/antelope/target/debug/deps/libpyo3_build_config-0f1915ab83673bd1.rlib: /Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/lib.rs /Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/errors.rs /Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/impl_.rs /Users/raphaelsourty/Documents/github/antelope/target/debug/build/pyo3-build-config-8d6d8b2c3337063b/out/pyo3-build-config-file.txt /Users/raphaelsourty/Documents/github/antelope/target/debug/build/pyo3-build-config-8d6d8b2c3337063b/out/pyo3-build-config.txt
+
+/Users/raphaelsourty/Documents/github/antelope/target/debug/deps/pyo3_build_config-0f1915ab83673bd1.d: /Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/lib.rs /Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/errors.rs /Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/impl_.rs /Users/raphaelsourty/Documents/github/antelope/target/debug/build/pyo3-build-config-8d6d8b2c3337063b/out/pyo3-build-config-file.txt /Users/raphaelsourty/Documents/github/antelope/target/debug/build/pyo3-build-config-8d6d8b2c3337063b/out/pyo3-build-config.txt
+
+/Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/lib.rs:
+/Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/errors.rs:
+/Users/raphaelsourty/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pyo3-build-config-0.21.2/src/impl_.rs:
+/Users/raphaelsourty/Documents/github/antelope/target/debug/build/pyo3-build-config-8d6d8b2c3337063b/out/pyo3-build-config-file.txt:
+/Users/raphaelsourty/Documents/github/antelope/target/debug/build/pyo3-build-config-8d6d8b2c3337063b/out/pyo3-build-config.txt:
+
+# env-dep:CARGO_PKG_VERSION=0.21.2
+# env-dep:OUT_DIR=/Users/raphaelsourty/Documents/github/antelope/target/debug/build/pyo3-build-config-8d6d8b2c3337063b/out

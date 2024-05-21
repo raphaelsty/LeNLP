@@ -1,0 +1,1 @@
+/Users/raphaelsourty/Documents/github/rs-cherche/target/debug/libtext_rs.dylib: /Users/raphaelsourty/Documents/github/rs-cherche/src/lib.rs /Users/raphaelsourty/Documents/github/rs-cherche/src/rsnormalize.rs

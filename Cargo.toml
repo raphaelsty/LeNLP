@@ -1,0 +1,13 @@
+[package]
+name = "rsantelope"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "rsantelope"
+crate-type = ["cdylib"]
+
+[dependencies]
+unidecode = "0.3.0"
+rayon = "1.10.0"
+pyo3 = { version = "0.21.2", features = ["extension-module"] }
