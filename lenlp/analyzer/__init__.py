@@ -1,3 +1,5 @@
 from .analyze import analyze
 
-__all__ = ["analyze"]
+__all__ = [
+    "analyze",
+]

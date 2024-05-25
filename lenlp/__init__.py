@@ -1,1 +1,7 @@
-__all__ = ["analyzer", "counter", "flash", "normalizer", "sparse"]
+__all__ = [
+    "analyzer",
+    "counter",
+    "flash",
+    "normalizer",
+    "sparse",
+]

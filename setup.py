@@ -1,38 +1,34 @@
 import setuptools
-from setuptools_rust import RustExtension
+from setuptools_rust import Binding, RustExtension
 
-from lenlp import __version__
+from lenlp.__version__ import __version__
 
-with open(file="README.md", mode="r", encoding="utf-8") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-base_packages = ["scikit-learn >= 1.5.0", "scipy >= 1.13.0"]
+base_packages = ["scikit-learn  >= 1.5.0", "scipy >= 1.13.1"]
+dev = ["maturin >= 1.5.1", "pytest-cov >= 5.0.0", "pytest >= 7.4.4", "ruff >= 0.1.15"]
+
 
 setuptools.setup(
     name="lenlp",
     version=f"{__version__}",
-    license="MIT",
-    authors="Raphael Sourty",
+    author="Raphael Sourty",
     author_email="raphael.sourty@gmail.com",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    rust_extensions=[RustExtension("rslenlp.rslenlp", "Cargo.toml", binding="pyo3")],
     url="https://github.com/raphaelsty/lenlp",
-    download_url="https://github.com/user/lenlp/archive/v_01.tar.gz",
-    keywords=[
-        "information retrieval",
-        "nlp",
-        "rust",
-        "bm25",
-        "tfidf",
-        "flashtext",
-    ],
+    download_url="https://github.com/raphaelsty/lenlp/archive/v_01.tar.gz",
+    keywords=[],
     packages=setuptools.find_packages(),
     install_requires=base_packages,
+    extras_require={"dev": base_packages + dev},
     classifiers=[
-        "Programming Language :: Python",
-        "Programming Language :: Rust",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Rust",
+        "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.9",
+    rust_extensions=[RustExtension("rslenlp", binding=Binding.PyO3)],
+    setup_requires=["setuptools-rust>=1.4.0"],
 )
