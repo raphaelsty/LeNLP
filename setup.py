@@ -3,7 +3,7 @@ from setuptools_rust import Binding, RustExtension
 
 from lenlp.__version__ import __version__
 
-with open("README.md", "r", encoding="utf-8") as fh:
+with open("readme.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 base_packages = ["scikit-learn  >= 1.5.0", "scipy >= 1.13.1"]
@@ -28,7 +28,7 @@ setuptools.setup(
         "Programming Language :: Rust",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.8",
     rust_extensions=[RustExtension("rslenlp", binding=Binding.PyO3)],
-    setup_requires=["setuptools-rust>=1.4.0"],
+    setup_requires=["setuptools-rust>=1.4.0", "maturin >= 1.5.1"],
 )
