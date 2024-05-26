@@ -7,7 +7,7 @@ on:
       - "release/*"
 
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
 
     strategy:
@@ -29,31 +29,175 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Install build dependencies
-        run: pip install setuptools-rust
+      - name: Install package dependencies
+        run: pip install setuptools-rust==1.9.0
 
-      - name: Build wheel
-        run: pip wheel .
+      - name: Install build tools
+        run: pip install wheel
 
-      - name: Create source distribution
-        run: python setup.py sdist
+      - name: Build the package
+        run: python setup.py sdist bdist_wheel
+
+      - name: Rename wheels
+        run: |
+          mkdir -p renamed_wheels
+          for whl in dist/*.whl; do
+            mv "$whl" "renamed_wheels/$(basename "$whl" | sed 's/linux/manylinux2014/')"
+          done
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: dist
+          name: dist-manylinux2014-${{ matrix.python-version }}
+          path: renamed_wheels/*
+
+  build-macos:
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Rust
+        run: brew install rust
+
+      - name: Install package dependencies
+        run: pip install setuptools-rust==1.9.0
+
+      - name: Install build tools
+        run: pip install wheel
+
+      - name: Build the package
+        run: python setup.py sdist bdist_wheel
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-macos-${{ matrix.python-version }}
+          path: dist/*
+
+  build-windows:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Rust
+        run: rustup default stable
+
+      - name: Install package dependencies
+        run: pip install setuptools-rust==1.9.0
+
+      - name: Install build tools
+        run: pip install wheel
+
+      - name: Build the package
+        run: python setup.py sdist bdist_wheel
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-windows-${{ matrix.python-version }}
           path: dist/*
 
   publish:
-    needs: build
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download artifact
+      - name: Download Linux artifacts for Python 3.8
         uses: actions/download-artifact@v3
         with:
-          name: dist
-          path: dist
+          name: dist-manylinux2014-3.8
+          path: dist/linux/3.8
+
+      - name: Download Linux artifacts for Python 3.9
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-manylinux2014-3.9
+          path: dist/linux/3.9
+
+      - name: Download Linux artifacts for Python 3.10
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-manylinux2014-3.10
+          path: dist/linux/3.10
+
+      - name: Download Linux artifacts for Python 3.11
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-manylinux2014-3.11
+          path: dist/linux/3.11
+
+      - name: Download macOS artifacts for Python 3.8
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-macos-3.8
+          path: dist/macos/3.8
+
+      - name: Download macOS artifacts for Python 3.9
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-macos-3.9
+          path: dist/macos/3.9
+
+      - name: Download macOS artifacts for Python 3.10
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-macos-3.10
+          path: dist/macos/3.10
+
+      - name: Download macOS artifacts for Python 3.11
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-macos-3.11
+          path: dist/macos/3.11
+
+      - name: Download Windows artifacts for Python 3.8
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-windows-3.8
+          path: dist/windows/3.8
+
+      - name: Download Windows artifacts for Python 3.9
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-windows-3.9
+          path: dist/windows/3.9
+
+      - name: Download Windows artifacts for Python 3.10
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-windows-3.10
+          path: dist/windows/3.10
+
+      - name: Download Windows artifacts for Python 3.11
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-windows-3.11
+          path: dist/windows/3.11
+
+      - name: Combine all artifacts
+        run: mkdir -p final_dist && find dist/ -type f -exec cp {} final_dist/ \;
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -67,4 +211,4 @@ jobs:
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: twine upload dist/*
+        run: twine upload final_dist/*
