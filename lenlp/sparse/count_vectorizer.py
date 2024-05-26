@@ -1,4 +1,3 @@
-import numpy as np
 from rslenlp import SparseMatrixBuilder
 from scipy.sparse import csr_matrix
 
@@ -48,7 +47,7 @@ class CountVectorizer:
 
     >>> matrix.toarray()
     array([[1, 1, 0, 0, 0],
-           [0, 0, 1, 1, 1]], dtype=int16)
+           [0, 0, 1, 1, 1]], dtype=uint64)
 
     >>> len(count_vectorizer.vocabulary)
     5
@@ -92,23 +91,25 @@ class CountVectorizer:
         """Transform documents to document-term matrix."""
         if not self.fitted:
             raise ValueError("Call fit method before calling transform method.")
+
         values, row_indices, column_indices = self.sparse_matrix.transform(
             raw_documents
         )
+
         return csr_matrix(
             arg1=(values, (row_indices, column_indices)),
             shape=(len(raw_documents), self.sparse_matrix.get_num_cols()),
-            dtype=np.int16,
         )
 
     def fit_transform(self, raw_documents: list[str]) -> csr_matrix:
         """Learn the vocabulary dictionary and return the CountVectorizer object."""
         self.fitted = True
+
         values, row_indices, column_indices = self.sparse_matrix.fit_transform(
             raw_documents
         )
+
         return csr_matrix(
             arg1=(values, (row_indices, column_indices)),
             shape=(len(raw_documents), self.sparse_matrix.get_num_cols()),
-            dtype=np.int16,
         )

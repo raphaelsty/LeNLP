@@ -3,6 +3,9 @@ from setuptools_rust import Binding, RustExtension
 
 from lenlp.__version__ import __version__
 
+with open(file="README.md", mode="r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 base_packages = ["scikit-learn  >= 1.5.0", "scipy >= 1.13.1"]
 dev = ["maturin >= 1.5.1", "pytest-cov >= 5.0.0", "pytest >= 7.4.4", "ruff >= 0.1.15"]
 
@@ -11,8 +14,9 @@ setuptools.setup(
     name="lenlp",
     version=f"{__version__}",
     author="Raphael Sourty",
-    author_email="raphael.sourty@gmail.com",
+    long_description=long_description,
     long_description_content_type="text/markdown",
+    author_email="raphael.sourty@gmail.com",
     url="https://github.com/raphaelsty/lenlp",
     download_url="https://github.com/raphaelsty/lenlp/archive/v_01.tar.gz",
     keywords=[],

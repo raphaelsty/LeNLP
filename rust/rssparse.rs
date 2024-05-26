@@ -1,10 +1,10 @@
+use crate::rsvectorizer::rsvectorize_many;
 use bincode::{deserialize, serialize};
+use numpy::PyArray1;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
-use crate::rsvectorizer::rsvectorize_many;
 
 // In order to properly pickle, we need to map to the Python module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -29,15 +29,23 @@ impl SparseMatrixBuilder {
     ) -> Self {
         SparseMatrixBuilder {
             vocab: HashMap::new(),
-            n_sizes: n_sizes,
-            analyzer: analyzer,
-            stop_words: stop_words,
-            normalize: normalize,
+            n_sizes,
+            analyzer,
+            stop_words,
+            normalize,
             num_cols: 0,
         }
     }
 
-    pub fn fit_transform(&mut self, texts: Vec<String>) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
+    pub fn fit_transform(
+        &mut self,
+        texts: Vec<String>,
+        py: Python,
+    ) -> (
+        Py<PyArray1<usize>>,
+        Py<PyArray1<usize>>,
+        Py<PyArray1<usize>>,
+    ) {
         self.vocab = HashMap::new();
         let texts: Vec<HashMap<String, usize>> = rsvectorize_many(
             texts,
@@ -46,8 +54,16 @@ impl SparseMatrixBuilder {
             self.stop_words.clone(),
             self.normalize,
         );
+
         self._fit(texts.clone());
-        self._transform(texts)
+
+        // Scipy csr_matrix are faster to build from numpy arrays.
+        let (vec1, vec2, vec3) = self._transform(texts);
+        (
+            PyArray1::from_vec_bound(py, vec1).into(),
+            PyArray1::from_vec_bound(py, vec2).into(),
+            PyArray1::from_vec_bound(py, vec3).into(),
+        )
     }
 
     pub fn fit(&mut self, texts: Vec<String>) {
@@ -76,7 +92,15 @@ impl SparseMatrixBuilder {
         self.num_cols = col_index;
     }
 
-    pub fn transform(&self, texts: Vec<String>) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
+    pub fn transform(
+        &self,
+        texts: Vec<String>,
+        py: Python,
+    ) -> (
+        Py<PyArray1<usize>>,
+        Py<PyArray1<usize>>,
+        Py<PyArray1<usize>>,
+    ) {
         let texts: Vec<HashMap<String, usize>> = rsvectorize_many(
             texts,
             self.n_sizes.clone(),
@@ -85,10 +109,16 @@ impl SparseMatrixBuilder {
             self.normalize,
         );
 
-        return self._transform(texts);
+        // Scipy csr_matrix are faster to build from numpy arrays.
+        let (vec1, vec2, vec3) = self._transform(texts);
+        (
+            PyArray1::from_vec_bound(py, vec1).into(),
+            PyArray1::from_vec_bound(py, vec2).into(),
+            PyArray1::from_vec_bound(py, vec3).into(),
+        )
     }
 
-    pub fn _transform(
+    fn _transform(
         &self,
         texts: Vec<HashMap<String, usize>>,
     ) -> (Vec<usize>, Vec<usize>, Vec<usize>) {

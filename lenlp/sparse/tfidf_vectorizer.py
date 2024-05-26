@@ -5,8 +5,8 @@ from sklearn.utils.sparsefuncs_fast import inplace_csr_row_normalize_l2
 from .count_vectorizer import CountVectorizer
 
 
-class TfIdfVectorizer(CountVectorizer):
-    """TfIdfVectorizer is a class that converts a collection of text documents to a sparse
+class TfidfVectorizer(CountVectorizer):
+    """TfidfVectorizer is a class that converts a collection of text documents to a sparse
     tfidf matrix.
 
     Parameters
@@ -32,7 +32,7 @@ class TfIdfVectorizer(CountVectorizer):
     --------
     >>> from lenlp import sparse
 
-    >>> tfidf_vectorizer = sparse.TfIdfVectorizer(
+    >>> tfidf_vectorizer = sparse.TfidfVectorizer(
     ...     analyzer="word",
     ...     normalize=True,
     ...     stop_words=None,
@@ -101,7 +101,7 @@ class TfIdfVectorizer(CountVectorizer):
             matrix=csr_matrix(
                 arg1=(values, (row_indices, column_indices)),
                 shape=(len(raw_documents), self.sparse_matrix.get_num_cols()),
-                dtype=np.float64,
+                dtype=np.float32,
             )
         )
 
@@ -114,7 +114,7 @@ class TfIdfVectorizer(CountVectorizer):
         matrix = csr_matrix(
             arg1=(values, (row_indices, column_indices)),
             shape=(len(raw_documents), self.sparse_matrix.get_num_cols()),
-            dtype=np.float64,
+            dtype=np.float32,
         )
 
         self.update(matrix=matrix)

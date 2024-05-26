@@ -111,48 +111,59 @@ impl RSKeywordProcessor {
     pub fn extract_keywords_many(
         &self,
         sentences: Vec<String>,
-        span_info: bool,
-    ) -> Vec<Vec<String>> {
+    ) -> Vec<Vec<(String, usize, usize)>> {
         sentences
             .par_iter()
-            .map(|sentence: &String| self.extract_keywords(&sentence, span_info.clone()))
+            .map(|sentence: &String| self.extract_keywords(&sentence))
             .collect()
     }
 
-    pub fn extract_keywords(&self, sentence: &str, span_info: bool) -> Vec<String> {
-        let sentence: String = if self.normalize {
-            unidecode(sentence)
-                .to_lowercase()
-                .chars()
-                .filter(|c| !c.is_ascii_punctuation())
-                .collect::<String>()
-                .trim()
-                .to_string()
+    pub fn extract_keywords(&self, sentence: &str) -> Vec<(String, usize, usize)> {
+        // Map from the index in the normalized sentence to the index in the original sentence
+        let mut index_map: Vec<usize> = Vec::with_capacity(sentence.len());
+        let mut original_idx = 0;
+
+        let normalized_sentence: String = if self.normalize {
+            let mut normalized = String::new();
+            for c in sentence.chars() {
+                if c.is_ascii_punctuation() {
+                    original_idx += c.len_utf8();
+                    continue;
+                }
+                let normalized_char = unidecode::unidecode_char(c).to_lowercase();
+                for nc in normalized_char.chars() {
+                    normalized.push(nc);
+                    index_map.push(original_idx);
+                }
+                original_idx += c.len_utf8();
+            }
+            normalized.to_string()
         } else if self.lowercase {
             sentence.to_lowercase()
         } else {
             sentence.to_string()
         };
 
-        let mut extracted_keywords: Vec<String> = Vec::new();
+        let mut extracted_keywords: Vec<(String, usize, usize)> = Vec::new();
         let mut current_node: &HashMap<char, RSTrieNode> = &self.keyword_trie_dict;
         let mut start_pos: usize = 0;
         let mut end_pos: usize = 0;
 
         let mut idx: usize = 0;
-        let sentence_len: usize = sentence.len();
+        let sentence_len: usize = normalized_sentence.len();
         while idx < sentence_len {
-            let char: char = sentence.chars().nth(idx).unwrap();
+            let char: char = normalized_sentence.chars().nth(idx).unwrap();
             if !self.non_word_boundaries.contains(&char) {
                 if let Some(node) = current_node.get(&self.keyword.chars().next().unwrap()) {
                     if node.is_end {
                         let clean_name: &String = node.clean_name.as_ref().unwrap();
-                        if span_info {
-                            extracted_keywords
-                                .push(format!("{}:{}:{}", clean_name, start_pos, end_pos));
-                        } else {
-                            extracted_keywords.push(clean_name.clone());
-                        }
+                        let original_start_pos = index_map[start_pos];
+                        let original_end_pos = index_map[end_pos - 1] + 1;
+                        extracted_keywords.push((
+                            clean_name.clone(),
+                            original_start_pos,
+                            original_end_pos,
+                        ));
                     }
                 }
                 current_node = &self.keyword_trie_dict;
@@ -165,6 +176,16 @@ impl RSKeywordProcessor {
                 start_pos = idx + 1;
             }
             idx += 1;
+        }
+
+        // Check if the last segment is a keyword
+        if let Some(node) = current_node.get(&self.keyword.chars().next().unwrap()) {
+            if node.is_end {
+                let clean_name: &String = node.clean_name.as_ref().unwrap();
+                let original_start_pos = index_map[start_pos];
+                let original_end_pos = index_map[end_pos - 1] + 1;
+                extracted_keywords.push((clean_name.clone(), original_start_pos, original_end_pos));
+            }
         }
 
         extracted_keywords

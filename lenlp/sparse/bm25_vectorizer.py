@@ -2,10 +2,10 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.utils.sparsefuncs_fast import inplace_csr_row_normalize_l2
 
-from .tfidf_vectorizer import TfIdfVectorizer
+from .tfidf_vectorizer import TfidfVectorizer
 
 
-class BM25Vectorizer(TfIdfVectorizer):
+class BM25Vectorizer(TfidfVectorizer):
     """BM25Vectorizer is a class that converts a collection of text documents to a sparse
     bm25 matrix.
 

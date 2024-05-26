@@ -46,7 +46,7 @@ def count(
     >>> counter.count("Hello, world!", sort=True)
     {'hello': 1, 'world': 1}
 
-    >>> counter.count("Hello, world!", ngram_range=[2, 2], sort=True, normalize=False)
+    >>> counter.count("Hello, world!", ngram_range=(2, 2), sort=True, normalize=False)
     {'Hello, world!': 1}
 
     >>> counter.count(["Hello, world!", "How are you?"], stop_words=["are", "you"], sort=True)
