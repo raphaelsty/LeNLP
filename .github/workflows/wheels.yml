@@ -1,4 +1,4 @@
-name: Build and Publish Wheels
+name: Build, Test, and Publish Wheels
 
 on:
   push:
@@ -9,42 +9,33 @@ on:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Install package dependencies
-        run: pip install setuptools-rust==1.9.0
-
-      - name: Install build tools
-        run: pip install wheel
-
-      - name: Build the package
-        run: python setup.py sdist bdist_wheel
-
+      - name: Install cibuildwheel
+        run: pip install cibuildwheel==2.6.0
+      - name: Build the wheels
+        env:
+          CIBW_BEFORE_BUILD: |
+            pip install setuptools-rust==1.9.0
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            export PATH="$HOME/.cargo/bin:$PATH"
+            source $HOME/.cargo/env
+            rustc --version
+        run: cibuildwheel --output-dir dist
       - name: Rename wheels
         run: |
           mkdir -p renamed_wheels
           for whl in dist/*.whl; do
             mv "$whl" "renamed_wheels/$(basename "$whl" | sed 's/linux/manylinux2014/')"
           done
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -53,32 +44,24 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
-
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: Install Rust
         run: brew install rust
-
-      - name: Install package dependencies
-        run: pip install setuptools-rust==1.9.0
-
-      - name: Install build tools
-        run: pip install wheel
-
-      - name: Build the package
-        run: python setup.py sdist bdist_wheel
-
+      - name: Install cibuildwheel
+        run: pip install cibuildwheel==2.6.0
+      - name: Build the wheels
+        env:
+          CIBW_BEFORE_BUILD: "pip install setuptools-rust==1.9.0"
+        run: cibuildwheel --output-dir dist
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -87,32 +70,24 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: Install Rust
         run: rustup default stable
-
-      - name: Install package dependencies
-        run: pip install setuptools-rust==1.9.0
-
-      - name: Install build tools
-        run: pip install wheel
-
-      - name: Build the package
-        run: python setup.py sdist bdist_wheel
-
+      - name: Install cibuildwheel
+        run: pip install cibuildwheel==2.6.0
+      - name: Build the wheels
+        env:
+          CIBW_BEFORE_BUILD: "pip install setuptools-rust==1.9.0"
+        run: cibuildwheel --output-dir dist
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -122,93 +97,45 @@ jobs:
   publish:
     needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        os: [linux, macos, windows]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
     steps:
-      - name: Download Linux artifacts for Python 3.8
+      - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
-          name: dist-manylinux2014-3.8
-          path: dist/linux/3.8
-
-      - name: Download Linux artifacts for Python 3.9
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-manylinux2014-3.9
-          path: dist/linux/3.9
-
-      - name: Download Linux artifacts for Python 3.10
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-manylinux2014-3.10
-          path: dist/linux/3.10
-
-      - name: Download Linux artifacts for Python 3.11
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-manylinux2014-3.11
-          path: dist/linux/3.11
-
-      - name: Download macOS artifacts for Python 3.8
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-macos-3.8
-          path: dist/macos/3.8
-
-      - name: Download macOS artifacts for Python 3.9
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-macos-3.9
-          path: dist/macos/3.9
-
-      - name: Download macOS artifacts for Python 3.10
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-macos-3.10
-          path: dist/macos/3.10
-
-      - name: Download macOS artifacts for Python 3.11
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-macos-3.11
-          path: dist/macos/3.11
-
-      - name: Download Windows artifacts for Python 3.8
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-windows-3.8
-          path: dist/windows/3.8
-
-      - name: Download Windows artifacts for Python 3.9
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-windows-3.9
-          path: dist/windows/3.9
-
-      - name: Download Windows artifacts for Python 3.10
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-windows-3.10
-          path: dist/windows/3.10
-
-      - name: Download Windows artifacts for Python 3.11
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-windows-3.11
-          path: dist/windows/3.11
-
+          name: dist-${{ matrix.os }}-${{ matrix.python-version }}
+          path: dist/${{ matrix.os }}/${{ matrix.python-version }}
       - name: Combine all artifacts
         run: mkdir -p final_dist && find dist/ -type f -exec cp {} final_dist/ \;
-
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-
       - name: Install twine
         run: pip install twine
-
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: twine upload final_dist/*
+
+  test-wheels:
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install wheels
+        run: pip install dist/${{ matrix.os }}/${{ matrix.python-version }}/*.whl
+      - name: Run tests
+        run: pytest
