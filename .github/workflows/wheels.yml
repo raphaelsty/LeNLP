@@ -12,44 +12,60 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-        os: [ubuntu-latest, ubuntu-20.04]
+        python-version: ["38", "39", "310", "311"]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
+      - name: Install Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ca-certificates \
+            curl \
+            gnupg \
+            lsb-release
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Install package dependencies
-        run: pip install setuptools-rust==1.9.0
-
-      - name: Install build tools
-        run: pip install wheel
-
-      - name: Build the package
-        run: python setup.py sdist bdist_wheel
+      - name: Build the package in manylinux2014 docker container
+        run: |
+          docker run --rm \
+            -v $(pwd):/io quay.io/pypa/manylinux2014_x86_64 \
+            /bin/bash -c '
+              curl https://sh.rustup.rs -sSf | sh -s -- -y
+              source $HOME/.cargo/env
+              export PATH=$PATH:$HOME/.cargo/bin
+              rustc --version
+              for PYBIN in /opt/python/cp${PYTHON_VERSION}*/bin; do
+                "${PYBIN}/python" -m venv /venv
+                source /venv/bin/activate
+                pip install setuptools-rust==1.9.0 wheel
+                cd /io
+                python setup.py bdist_wheel
+                deactivate
+              done
+            ' \
+            --env PYTHON_VERSION=${{ matrix.python-version }}
 
       - name: Rename wheels
         run: |
-          mkdir -p renamed_wheels
+          sudo mkdir -p renamed_wheels
+          sudo chown -R $USER:$(id -gn) renamed_wheels
           for whl in dist/*.whl; do
-            mv "$whl" "renamed_wheels/$(basename "$whl" | sed 's/linux/manylinux2014/')"
+            sudo mv "$whl" "renamed_wheels/$(basename "$whl" | sed 's/linux/manylinux2014/')"
           done
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: dist-manylinux2014-${{ matrix.python-version }}-${{ matrix.os }}
+          name: dist-manylinux2014-${{ matrix.python-version }}
           path: renamed_wheels/*
 
   build-macos:
@@ -128,50 +144,26 @@ jobs:
       - name: Download Linux artifacts for Python 3.8
         uses: actions/download-artifact@v3
         with:
-          name: dist-manylinux2014-3.8-ubuntu-latest
-          path: dist/linux/3.8/ubuntu-latest
-
-      - name: Download Linux artifacts for Python 3.8 (Ubuntu 20.04)
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-manylinux2014-3.8-ubuntu-20.04
-          path: dist/linux/3.8/ubuntu-20.04
+          name: dist-manylinux2014-38
+          path: dist/linux/3.8
 
       - name: Download Linux artifacts for Python 3.9
         uses: actions/download-artifact@v3
         with:
-          name: dist-manylinux2014-3.9-ubuntu-latest
-          path: dist/linux/3.9/ubuntu-latest
-
-      - name: Download Linux artifacts for Python 3.9 (Ubuntu 20.04)
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-manylinux2014-3.9-ubuntu-20.04
-          path: dist/linux/3.9/ubuntu-20.04
+          name: dist-manylinux2014-39
+          path: dist/linux/3.9
 
       - name: Download Linux artifacts for Python 3.10
         uses: actions/download-artifact@v3
         with:
-          name: dist-manylinux2014-3.10-ubuntu-latest
-          path: dist/linux/3.10/ubuntu-latest
-
-      - name: Download Linux artifacts for Python 3.10 (Ubuntu 20.04)
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-manylinux2014-3.10-ubuntu-20.04
-          path: dist/linux/3.10/ubuntu-20.04
+          name: dist-manylinux2014-310
+          path: dist/linux/3.10
 
       - name: Download Linux artifacts for Python 3.11
         uses: actions/download-artifact@v3
         with:
-          name: dist-manylinux2014-3.11-ubuntu-latest
-          path: dist/linux/3.11/ubuntu-latest
-
-      - name: Download Linux artifacts for Python 3.11 (Ubuntu 20.04)
-        uses: actions/download-artifact@v3
-        with:
-          name: dist-manylinux2014-3.11-ubuntu-20.04
-          path: dist/linux/3.11/ubuntu-20.04
+          name: dist-manylinux2014-311
+          path: dist/linux/3.11
 
       - name: Download macOS artifacts for Python 3.8
         uses: actions/download-artifact@v3
