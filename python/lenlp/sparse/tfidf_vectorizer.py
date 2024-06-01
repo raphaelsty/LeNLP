@@ -89,7 +89,7 @@ class TfidfVectorizer(CountVectorizer):
             indices=matrix.indices,
         )
 
-        inplace_csr_row_normalize_l2(X=matrix)
+        inplace_csr_row_normalize_l2(matrix)
         return matrix
 
     def transform(self, raw_documents: list[str]) -> csr_matrix:

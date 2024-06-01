@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "lenlp"
-version = "1.0.6"
+version = "1.1.0"
 description = "Natural Language Processing library for Python from Rust."
 
 authors = [

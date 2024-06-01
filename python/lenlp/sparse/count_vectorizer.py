@@ -1,3 +1,4 @@
+import numpy as np
 from scipy.sparse import csr_matrix
 
 from lenlp._rslenlp import SparseMatrixBuilder
@@ -47,8 +48,8 @@ class CountVectorizer:
     (2, 5)
 
     >>> matrix.toarray()
-    array([[1, 1, 0, 0, 0],
-           [0, 0, 1, 1, 1]], dtype=uint64)
+    array([[1., 1., 0., 0., 0.],
+           [0., 0., 1., 1., 1.]], dtype=float32)
 
     >>> len(count_vectorizer.vocabulary)
     5
@@ -100,6 +101,7 @@ class CountVectorizer:
         return csr_matrix(
             arg1=(values, (row_indices, column_indices)),
             shape=(len(raw_documents), self.sparse_matrix.get_num_cols()),
+            dtype=np.float32,
         )
 
     def fit_transform(self, raw_documents: list[str]) -> csr_matrix:
@@ -113,4 +115,5 @@ class CountVectorizer:
         return csr_matrix(
             arg1=(values, (row_indices, column_indices)),
             shape=(len(raw_documents), self.sparse_matrix.get_num_cols()),
+            dtype=np.float32,
         )

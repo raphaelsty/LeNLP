@@ -113,5 +113,5 @@ class BM25Vectorizer(TfidfVectorizer):
         matrix.data = (numerator.data / denominator.tocsr().data) + self.epsilon
 
         matrix = matrix.multiply(other=self.idf).tocsr()
-        inplace_csr_row_normalize_l2(X=matrix)
+        inplace_csr_row_normalize_l2(matrix)
         return matrix
