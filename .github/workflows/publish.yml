@@ -16,91 +16,94 @@ permissions:
 
 jobs:
   linux:
-    runs-on: ${{ matrix.platform.runner }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        platform:
-          - runner: ubuntu-latest
-            target: x86_64
-          - runner: ubuntu-latest
-            target: x86
-          - runner: ubuntu-latest
-            target: aarch64
-          - runner: ubuntu-latest
-            target: armv7
-          - runner: ubuntu-latest
-            target: s390x
-          - runner: ubuntu-latest
-            target: ppc64le
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        target: [x86_64, x86, aarch64, armv7, s390x, ppc64le]
+        runner: [ubuntu-latest]
+        exclude:
+          - target: x86
+            python-version: ['3.8', '3.9', '3.11', '3.12']
+          - target: aarch64
+            python-version: ['3.8', '3.9', '3.11', '3.12']
+          - target: armv7
+            python-version: ['3.8', '3.9', '3.11', '3.12']
+          - target: s390x
+            python-version: ['3.8', '3.9', '3.11', '3.12']
+          - target: ppc64le
+            python-version: ['3.8', '3.9', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.python-version }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.platform.target }}
+          target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
           manylinux: auto
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-linux-${{ matrix.platform.target }}
+          name: wheels-linux-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
 
   windows:
-    runs-on: ${{ matrix.platform.runner }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        platform:
-          - runner: windows-latest
-            target: x64
-          - runner: windows-latest
-            target: x86
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        target: [x64, x86]
+        runner: [windows-latest]
+        exclude:
+          - target: x86
+            python-version: ['3.8', '3.9', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          architecture: ${{ matrix.platform.target }}
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.target }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.platform.target }}
+          target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-${{ matrix.platform.target }}
+          name: wheels-windows-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
 
   macos:
-    runs-on: ${{ matrix.platform.runner }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        platform:
-          - runner: macos-latest
-            target: x86_64
-          - runner: macos-14
-            target: aarch64
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        target: [x86_64, aarch64]
+        runner: [macos-latest, macos-14]
+        exclude:
+          - target: aarch64
+            python-version: ['3.8', '3.9', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.python-version }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.platform.target }}
+          target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-macos-${{ matrix.platform.target }}
+          name: wheels-macos-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
 
   sdist:
