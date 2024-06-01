@@ -1,4 +1,4 @@
-from rslenlp import RSKeywordProcessor
+from lenlp._rslenlp import RSKeywordProcessor
 
 __all__ = ["FlashText"]
 

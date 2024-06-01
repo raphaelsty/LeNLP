@@ -1,4 +1,4 @@
-from rslenlp import rsnormalize, rsnormalize_many
+from lenlp._rslenlp import rsnormalize, rsnormalize_many
 
 __all__ = ["normalize"]
 

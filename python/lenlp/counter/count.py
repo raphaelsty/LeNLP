@@ -1,4 +1,4 @@
-from rslenlp import (
+from lenlp._rslenlp import (
     rsvectorize_char_ngrams_many,
     rsvectorize_char_wb_ngrams_many,
     rsvectorize_split_words_many,
