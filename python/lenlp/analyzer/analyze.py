@@ -1,4 +1,4 @@
-from rslenlp import rschar_ngrams_many, rschar_wb_ngrams_many, rssplit_words_many
+from lenlp._rslenlp import rschar_ngrams_many, rschar_wb_ngrams_many, rssplit_words_many
 
 __all__ = ["analyze"]
 

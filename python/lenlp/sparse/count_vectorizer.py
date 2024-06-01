@@ -1,5 +1,6 @@
-from rslenlp import SparseMatrixBuilder
 from scipy.sparse import csr_matrix
+
+from lenlp._rslenlp import SparseMatrixBuilder
 
 __all__ = ["CountVectorizer"]
 

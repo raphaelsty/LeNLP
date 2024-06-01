@@ -1,9 +1,9 @@
 [package]
-name = "lenlp"
+name = "_rslenlp"
 edition = "2021"
 
 [lib]
-name = "rslenlp"
+name = "_rslenlp"
 crate-type = ["cdylib"]
 path = "rust/lib.rs"
 
@@ -23,5 +23,5 @@ opt-level = 0
 [profile.release]
 opt-level = 3
 
-[tool.setuptools.packages]
-find = { where = ["lenlp"] }
+[tool.maturin]
+features = ["pyo3/extension-module"]
