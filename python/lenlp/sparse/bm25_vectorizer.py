@@ -109,7 +109,7 @@ class BM25Vectorizer(TfidfVectorizer):
             )
         )
 
-        denominator = matrix.copy().tocsc()
+        denominator = matrix.tocsc()
         denominator.data += np.take(a=regularization, indices=denominator.indices)
         matrix.data = (
             (matrix.data * (self.k1 + 1)) / denominator.tocsr().data
