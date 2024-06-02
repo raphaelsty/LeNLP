@@ -92,7 +92,10 @@ class BM25Vectorizer(TfidfVectorizer):
         self.count = matrix.shape[0]
 
         self.idf = np.squeeze(
-            a=np.asarray(a=np.log((self.count - self.tf + 0.5) / (self.tf + 0.5) + 1))
+            a=np.asarray(
+                a=np.log((self.count - self.tf + 0.5) / (self.tf + 0.5) + 1),
+                dtype=np.float32,
+            )
         )
 
     def _transform(self, matrix: csr_matrix) -> csr_matrix:
@@ -106,11 +109,11 @@ class BM25Vectorizer(TfidfVectorizer):
             )
         )
 
-        numerator = matrix.copy()
         denominator = matrix.copy().tocsc()
-        numerator.data = numerator.data * (self.k1 + 1)
         denominator.data += np.take(a=regularization, indices=denominator.indices)
-        matrix.data = (numerator.data / denominator.tocsr().data) + self.epsilon
+        matrix.data = (
+            (matrix.data * (self.k1 + 1)) / denominator.tocsr().data
+        ) + self.epsilon
 
         matrix = matrix.multiply(other=self.idf).tocsr()
         inplace_csr_row_normalize_l2(matrix)
