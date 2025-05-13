@@ -1,4 +1,5 @@
 use pyo3::prelude::*;
+use pyo3::types::PyModule; // <- NEW: we now use the smart-pointer Bound<…, PyModule>
 use pyo3::wrap_pyfunction;
 use rayon::prelude::*;
 
@@ -26,16 +27,7 @@ pub fn rssplit_words(text: &str, n_sizes: Vec<usize>) -> Vec<String> {
     ngrams
 }
 
-/// Splits text into words.
-///
-/// # Arguments
-///
-/// * `texts` - The input texts.
-/// * `n_sizes` - The size of the n-grams.
-///
-/// # Returns
-///
-/// A vector of words.
+/// Same as `rssplit_words` but for many texts at once.
 #[pyfunction]
 pub fn rssplit_words_many(texts: Vec<String>, n_sizes: Vec<usize>) -> Vec<Vec<String>> {
     texts
@@ -65,20 +57,10 @@ pub fn rschar_ngrams(text: &str, n_sizes: Vec<usize>) -> Vec<String> {
         }
     }
 
-    ngrams.into_iter().collect()
+    ngrams
 }
 
-/// Computes character n-grams for multiple texts.
-///
-/// # Arguments
-///
-///
-/// * `texts` - A vector of input texts.
-/// * `n_sizes` - The size of the n-grams.
-///
-/// # Returns
-///
-/// A vector of vectors of character n-grams.
+/// Same as `rschar_ngrams` but for many texts at once.
 #[pyfunction]
 pub fn rschar_ngrams_many(texts: Vec<String>, n_sizes: Vec<usize>) -> Vec<Vec<String>> {
     texts
@@ -87,16 +69,7 @@ pub fn rschar_ngrams_many(texts: Vec<String>, n_sizes: Vec<usize>) -> Vec<Vec<St
         .collect()
 }
 
-/// Computes character n-grams with word boundaries.
-///
-/// # Arguments
-///
-/// * `text` - The input text.
-/// * `n_sizes` - The size of the n-grams.
-///
-/// # Returns
-///
-/// A vector of character n-grams with word boundaries.
+/// Character n-grams with word-boundary handling.
 #[pyfunction]
 pub fn rschar_wb_ngrams(text: &str, n_sizes: Vec<usize>) -> Vec<String> {
     let mut ngrams: Vec<String> = Vec::new();
@@ -113,16 +86,8 @@ pub fn rschar_wb_ngrams(text: &str, n_sizes: Vec<usize>) -> Vec<String> {
 
     ngrams
 }
-/// Computes character n-grams with word boundaries for multiple texts.
-///
-/// # Arguments
-///
-/// * `texts` - A vector of input texts.
-/// * `n_sizes` - The size of the n-grams.
-///
-/// # Returns
-///
-/// A vector of vectors of character n-grams with word boundaries.
+
+/// Same as `rschar_wb_ngrams` but for many texts at once.
 #[pyfunction]
 pub fn rschar_wb_ngrams_many(texts: Vec<String>, n_sizes: Vec<usize>) -> Vec<Vec<String>> {
     texts
@@ -131,7 +96,10 @@ pub fn rschar_wb_ngrams_many(texts: Vec<String>, n_sizes: Vec<usize>) -> Vec<Vec
         .collect()
 }
 
-pub fn register_functions(m: &PyModule) -> PyResult<()> {
+/// Registers all the above functions in a Python sub-module.
+///
+/// Called from your `#[pymodule]` entry-point.
+pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rssplit_words, m)?)?;
     m.add_function(wrap_pyfunction!(rssplit_words_many, m)?)?;
     m.add_function(wrap_pyfunction!(rschar_ngrams, m)?)?;

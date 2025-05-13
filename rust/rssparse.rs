@@ -2,11 +2,14 @@ use crate::rsvectorizer::rsvectorize_many;
 use bincode::{deserialize, serialize};
 use numpy::PyArray1;
 use pyo3::prelude::*;
-use pyo3::types::PyBytes;
+use pyo3::types::{PyBytes, PyModule}; // NEW
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-// In order to properly pickle, we need to map to the Python module.
+// ---------------------------------------------------------------------------
+// Sparse-matrix builder
+// ---------------------------------------------------------------------------
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[pyclass(module = "lenlp.sparse.count_vectorizer")]
 pub struct SparseMatrixBuilder {
@@ -27,7 +30,7 @@ impl SparseMatrixBuilder {
         stop_words: Option<Vec<String>>,
         normalize: Option<bool>,
     ) -> Self {
-        SparseMatrixBuilder {
+        Self {
             vocab: HashMap::new(),
             n_sizes,
             analyzer,
@@ -37,10 +40,11 @@ impl SparseMatrixBuilder {
         }
     }
 
+    /// Build the vocabulary and return the CSR triplet arrays.
     pub fn fit_transform(
         &mut self,
         texts: Vec<String>,
-        py: Python,
+        py: Python<'_>,
     ) -> (
         Py<PyArray1<usize>>,
         Py<PyArray1<usize>>,
@@ -95,7 +99,7 @@ impl SparseMatrixBuilder {
     pub fn transform(
         &self,
         texts: Vec<String>,
-        py: Python,
+        py: Python<'_>,
     ) -> (
         Py<PyArray1<usize>>,
         Py<PyArray1<usize>>,
@@ -139,6 +143,9 @@ impl SparseMatrixBuilder {
         (values, row_indices, column_indices)
     }
 
+    // ---------------------------------------------------------------------
+    // Accessors
+    // ---------------------------------------------------------------------
     pub fn get_vocab(&self) -> HashMap<String, usize> {
         self.vocab.clone()
     }
@@ -147,12 +154,16 @@ impl SparseMatrixBuilder {
         self.num_cols
     }
 
-    pub fn __setstate__(&mut self, state: &PyBytes) -> PyResult<()> {
+    // ---------------------------------------------------------------------
+    // Pickle support
+    // ---------------------------------------------------------------------
+
+    pub fn __setstate__(&mut self, state: &Bound<'_, PyBytes>) -> PyResult<()> {
         *self = deserialize(state.as_bytes()).unwrap();
         Ok(())
     }
 
-    pub fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<&'py PyBytes> {
+    pub fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
         Ok(PyBytes::new(py, &serialize(&self).unwrap()))
     }
 
@@ -168,7 +179,11 @@ impl SparseMatrixBuilder {
     }
 }
 
-pub fn register_functions(m: &PyModule) -> PyResult<()> {
+// ---------------------------------------------------------------------------
+// Module registration
+// ---------------------------------------------------------------------------
+
+pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SparseMatrixBuilder>()?;
     Ok(())
 }

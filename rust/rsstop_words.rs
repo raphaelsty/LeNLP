@@ -49,7 +49,7 @@ pub fn rsfilter_stop_words_many(texts: Vec<String>, stop_words: Vec<String>) -> 
         .collect()
 }
 
-pub fn register_functions(m: &PyModule) -> PyResult<()> {
+pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rsfilter_stop_words, m)?)?;
     m.add_function(wrap_pyfunction!(rsfilter_stop_words_many, m)?)?;
     Ok(())

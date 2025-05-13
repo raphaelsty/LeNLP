@@ -35,7 +35,10 @@ pub fn rscount_many(texts: Vec<Vec<String>>) -> Vec<HashMap<String, usize>> {
     texts.par_iter().map(|text| rscount(text.clone())).collect()
 }
 
-pub fn register_functions(m: &PyModule) -> PyResult<()> {
+/// Registers all the above functions in a Python sub-module.
+///
+/// Called from your `#[pymodule]` entry-point.
+pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rscount, m)?)?;
     m.add_function(wrap_pyfunction!(rscount_many, m)?)?;
     Ok(())

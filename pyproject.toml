@@ -4,12 +4,10 @@ build-backend = "maturin"
 
 [project]
 name = "lenlp"
-version = "1.1.1"
+version = "1.2.0"
 description = "Natural Language Processing library for Python from Rust."
 
-authors = [
-    {name = "Raphael Sourty", email = "raphael.sourty@gmail.com"},
-]
+authors = [{ name = "Raphael Sourty", email = "raphael.sourty@gmail.com" }]
 
 
 keywords = []
@@ -22,10 +20,7 @@ classifiers = [
 
 requires-python = ">=3.8"
 
-dependencies = [
-    "scikit-learn >= 1.5.0",
-    "scipy >= 1.13.1",
-]
+dependencies = ["scikit-learn >= 1.5.0", "scipy >= 1.13.1"]
 
 [project.urls]
 Homepage = "https://github.com/raphaelsty/lenlp"
@@ -41,17 +36,12 @@ dev = [
 ]
 [tool.maturin]
 bindings = "pyo3"
-features = ["pyo3/extension-module"]   
+features = ["pyo3/extension-module"]
 python-source = "python"
 module-name = "lenlp._rslenlp"
 
 [tool.include]
-include = [
-    "Cargo.toml",
-    "pyproject.toml",
-    "README.md",
-    "rust/*",
-]
+include = ["Cargo.toml", "pyproject.toml", "README.md", "rust/*"]
 
 [tool.pytest.ini_options]
 filterwarnings = [
@@ -67,11 +57,7 @@ addopts = [
     "-m not web and not slow",
 ]
 doctest_optionflags = ["NORMALIZE_WHITESPACE", "NUMBER"]
-norecursedirs = [
-    "build",
-    "docs",
-    "node_modules",
-]
+norecursedirs = ["build", "docs", "node_modules"]
 markers = [
     "web: tests that require using the Internet",
     "slow: tests that take a long time to run",

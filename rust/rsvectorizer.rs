@@ -85,7 +85,7 @@ pub fn rsvectorize_many(
     }
 }
 
-pub fn register_functions(m: &PyModule) -> PyResult<()> {
+pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rsvectorize_split_words_many, m)?)?;
     m.add_function(wrap_pyfunction!(rsvectorize_char_ngrams_many, m)?)?;
     m.add_function(wrap_pyfunction!(rsvectorize_char_wb_ngrams_many, m)?)?;

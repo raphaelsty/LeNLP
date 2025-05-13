@@ -28,13 +28,21 @@ class FlashText:
 
     """
 
-    def __init__(self, lowercase: bool = True, normalize: bool = True) -> None:
+    def __init__(
+        self,
+        lowercase: bool = True,
+        normalize: bool = True,
+    ) -> None:
         self.flash = RSKeywordProcessor(lowercase=lowercase, normalize=normalize)
 
-    def add(self, x: str | list[str]) -> None:
+    def add(
+        self,
+        x: str | list[str],
+        clean_name: str | None = None,
+    ) -> None:
         """Add a keyword to the FlashText object."""
         x = [x] if isinstance(x, str) else x
-        self.flash.add_keywords_many(x)
+        self.flash.add_keywords_many(x, clean_name)
         return self
 
     def extract(self, x: str | list[str]) -> list[str]:

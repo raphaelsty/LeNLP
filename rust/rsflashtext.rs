@@ -192,7 +192,10 @@ impl RSKeywordProcessor {
     }
 }
 
-pub fn register_functions(m: &PyModule) -> PyResult<()> {
+/// Registers all the above functions in a Python sub-module.
+///
+/// Called from your `#[pymodule]` entry-point.
+pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<RSKeywordProcessor>()?;
     m.add_class::<RSTrieNode>()?;
     Ok(())

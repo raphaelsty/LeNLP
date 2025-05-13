@@ -37,7 +37,7 @@ pub fn rsnormalize_many(texts: Vec<String>) -> Vec<String> {
     texts.par_iter().map(|text| rsnormalize(text)).collect()
 }
 
-pub fn register_functions(m: &PyModule) -> PyResult<()> {
+pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rsnormalize, m)?)?;
     m.add_function(wrap_pyfunction!(rsnormalize_many, m)?)?;
     Ok(())
