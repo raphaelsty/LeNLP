@@ -21,6 +21,21 @@ pub struct SparseMatrixBuilder {
     num_cols: usize,
 }
 
+impl SparseMatrixBuilder {
+    fn _fit(&mut self, texts: &Vec<HashMap<String, usize>>) {
+        let mut col_index: usize = 0;
+        for doc in texts {
+            for token in doc.keys() {
+                if !self.vocab.contains_key(token) {
+                    self.vocab.insert(token.clone(), col_index);
+                    col_index += 1;
+                }
+            }
+        }
+        self.num_cols = col_index;
+    }
+}
+
 #[pymethods]
 impl SparseMatrixBuilder {
     #[new]
@@ -59,7 +74,7 @@ impl SparseMatrixBuilder {
             self.normalize,
         );
 
-        self._fit(texts.clone());
+        self._fit(&texts);
 
         // Scipy csr_matrix are faster to build from numpy arrays.
         let (vec1, vec2, vec3) = self._transform(texts);
@@ -80,20 +95,7 @@ impl SparseMatrixBuilder {
             self.normalize,
         );
 
-        self._fit(texts);
-    }
-
-    fn _fit(&mut self, texts: Vec<HashMap<String, usize>>) {
-        let mut col_index: usize = 0;
-        for doc in &texts {
-            for token in doc.keys() {
-                if !self.vocab.contains_key(token) {
-                    self.vocab.insert(token.clone(), col_index);
-                    col_index += 1;
-                }
-            }
-        }
-        self.num_cols = col_index;
+        self._fit(&texts);
     }
 
     pub fn transform(
