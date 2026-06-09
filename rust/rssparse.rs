@@ -2,9 +2,10 @@ use crate::rsvectorizer::rsvectorize_many;
 use bincode::{deserialize, serialize};
 use numpy::PyArray1;
 use pyo3::prelude::*;
-use pyo3::types::{PyBytes, PyModule}; // NEW
+use pyo3::types::{PyBytes, PyModule};
+use rayon::prelude::*;
+use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
 // Sparse-matrix builder
@@ -17,9 +18,12 @@ pub struct SparseMatrixBuilder {
     n_sizes: Vec<usize>,
     stop_words: Option<Vec<String>>,
     normalize: Option<bool>,
-    vocab: HashMap<String, usize>,
+    vocab: FxHashMap<String, usize>,
     num_cols: usize,
 }
+
+/// CSR arrays as returned to Python: (data, indices, indptr).
+type CsrArrays = (Py<PyArray1<f32>>, Py<PyArray1<i32>>, Py<PyArray1<i32>>);
 
 #[pymethods]
 impl SparseMatrixBuilder {
@@ -31,7 +35,7 @@ impl SparseMatrixBuilder {
         normalize: Option<bool>,
     ) -> Self {
         Self {
-            vocab: HashMap::new(),
+            vocab: FxHashMap::default(),
             n_sizes,
             analyzer,
             stop_words,
@@ -40,113 +44,28 @@ impl SparseMatrixBuilder {
         }
     }
 
-    /// Build the vocabulary and return the CSR triplet arrays.
-    pub fn fit_transform(
-        &mut self,
-        texts: Vec<String>,
-        py: Python<'_>,
-    ) -> (
-        Py<PyArray1<usize>>,
-        Py<PyArray1<usize>>,
-        Py<PyArray1<usize>>,
-    ) {
-        self.vocab = HashMap::new();
-        let texts: Vec<HashMap<String, usize>> = rsvectorize_many(
-            texts,
-            self.n_sizes.clone(),
-            self.analyzer.clone(),
-            self.stop_words.clone(),
-            self.normalize,
-        );
-
-        self._fit(texts.clone());
-
-        // Scipy csr_matrix are faster to build from numpy arrays.
-        let (vec1, vec2, vec3) = self._transform(texts);
-        (
-            PyArray1::from_vec_bound(py, vec1).into(),
-            PyArray1::from_vec_bound(py, vec2).into(),
-            PyArray1::from_vec_bound(py, vec3).into(),
-        )
+    /// Build the vocabulary and return the CSR arrays.
+    pub fn fit_transform(&mut self, texts: Vec<String>, py: Python<'_>) -> CsrArrays {
+        let docs = self.vectorize(texts);
+        self._fit(&docs);
+        self.to_numpy(self._transform(&docs), py)
     }
 
     pub fn fit(&mut self, texts: Vec<String>) {
-        self.vocab = HashMap::new();
-        let texts: Vec<HashMap<String, usize>> = rsvectorize_many(
-            texts,
-            self.n_sizes.clone(),
-            self.analyzer.clone(),
-            self.stop_words.clone(),
-            self.normalize,
-        );
-
-        self._fit(texts);
+        let docs = self.vectorize(texts);
+        self._fit(&docs);
     }
 
-    fn _fit(&mut self, texts: Vec<HashMap<String, usize>>) {
-        let mut col_index: usize = 0;
-        for doc in &texts {
-            for token in doc.keys() {
-                if !self.vocab.contains_key(token) {
-                    self.vocab.insert(token.clone(), col_index);
-                    col_index += 1;
-                }
-            }
-        }
-        self.num_cols = col_index;
-    }
-
-    pub fn transform(
-        &self,
-        texts: Vec<String>,
-        py: Python<'_>,
-    ) -> (
-        Py<PyArray1<usize>>,
-        Py<PyArray1<usize>>,
-        Py<PyArray1<usize>>,
-    ) {
-        let texts: Vec<HashMap<String, usize>> = rsvectorize_many(
-            texts,
-            self.n_sizes.clone(),
-            self.analyzer.clone(),
-            self.stop_words.clone(),
-            self.normalize,
-        );
-
-        // Scipy csr_matrix are faster to build from numpy arrays.
-        let (vec1, vec2, vec3) = self._transform(texts);
-        (
-            PyArray1::from_vec_bound(py, vec1).into(),
-            PyArray1::from_vec_bound(py, vec2).into(),
-            PyArray1::from_vec_bound(py, vec3).into(),
-        )
-    }
-
-    fn _transform(
-        &self,
-        texts: Vec<HashMap<String, usize>>,
-    ) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
-        let mut values: Vec<usize> = Vec::new();
-        let mut row_indices: Vec<usize> = Vec::new();
-        let mut column_indices: Vec<usize> = Vec::new();
-
-        for (row_idx, doc) in texts.iter().enumerate() {
-            for (token, &count) in doc.iter() {
-                if let Some(&col_idx) = self.vocab.get(token) {
-                    values.push(count);
-                    row_indices.push(row_idx);
-                    column_indices.push(col_idx);
-                }
-            }
-        }
-
-        (values, row_indices, column_indices)
+    pub fn transform(&self, texts: Vec<String>, py: Python<'_>) -> CsrArrays {
+        let docs = self.vectorize(texts);
+        self.to_numpy(self._transform(&docs), py)
     }
 
     // ---------------------------------------------------------------------
     // Accessors
     // ---------------------------------------------------------------------
-    pub fn get_vocab(&self) -> HashMap<String, usize> {
+
+    pub fn get_vocab(&self) -> FxHashMap<String, usize> {
         self.vocab.clone()
     }
 
@@ -176,6 +95,77 @@ impl SparseMatrixBuilder {
             self.stop_words.clone(),
             self.normalize,
         ))
+    }
+}
+
+impl SparseMatrixBuilder {
+    fn vectorize(&self, texts: Vec<String>) -> Vec<FxHashMap<String, usize>> {
+        rsvectorize_many(
+            texts,
+            self.n_sizes.clone(),
+            self.analyzer.clone(),
+            self.stop_words.clone(),
+            self.normalize,
+        )
+    }
+
+    fn _fit(&mut self, docs: &[FxHashMap<String, usize>]) {
+        self.vocab = FxHashMap::default();
+        for doc in docs {
+            for token in doc.keys() {
+                if !self.vocab.contains_key(token) {
+                    self.vocab.insert(token.clone(), self.vocab.len());
+                }
+            }
+        }
+        self.num_cols = self.vocab.len();
+    }
+
+    /// Build CSR arrays from the vectorized documents.
+    ///
+    /// Tokens missing from the vocabulary are dropped; column indices are
+    /// sorted within each row so scipy can use the arrays as-is.
+    fn _transform(&self, docs: &[FxHashMap<String, usize>]) -> (Vec<f32>, Vec<i32>, Vec<i32>) {
+        let rows: Vec<Vec<(i32, f32)>> = docs
+            .par_iter()
+            .map(|doc| {
+                let mut row: Vec<(i32, f32)> = doc
+                    .iter()
+                    .filter_map(|(token, &count)| {
+                        self.vocab
+                            .get(token)
+                            .map(|&col| (col as i32, count as f32))
+                    })
+                    .collect();
+                row.sort_unstable_by_key(|&(col, _)| col);
+                row
+            })
+            .collect();
+
+        let nnz: usize = rows.iter().map(Vec::len).sum();
+        let mut data: Vec<f32> = Vec::with_capacity(nnz);
+        let mut indices: Vec<i32> = Vec::with_capacity(nnz);
+        let mut indptr: Vec<i32> = Vec::with_capacity(rows.len() + 1);
+
+        indptr.push(0);
+        for row in &rows {
+            for &(col, value) in row {
+                indices.push(col);
+                data.push(value);
+            }
+            indptr.push(indices.len() as i32);
+        }
+
+        (data, indices, indptr)
+    }
+
+    fn to_numpy(&self, csr: (Vec<f32>, Vec<i32>, Vec<i32>), py: Python<'_>) -> CsrArrays {
+        let (data, indices, indptr) = csr;
+        (
+            PyArray1::from_vec(py, data).into(),
+            PyArray1::from_vec(py, indices).into(),
+            PyArray1::from_vec(py, indptr).into(),
+        )
     }
 }
 
