@@ -86,35 +86,32 @@ class BM25Vectorizer(TfidfVectorizer):
 
     def update(self, matrix: csr_matrix) -> csr_matrix:
         """Update the idf values."""
-        self.tf = (matrix > 0).sum(axis=0)
-        len_documents = (matrix).sum(axis=1)
+        # Stored entries are positive counts, so the document frequency of a
+        # term is the number of stored entries in its column.
+        self.tf = np.bincount(matrix.indices, minlength=matrix.shape[1])
+        len_documents = matrix.sum(axis=1)
         self.average_len = len_documents.mean()
         self.count = matrix.shape[0]
 
-        self.idf = np.squeeze(
-            a=np.asarray(
-                a=np.log((self.count - self.tf + 0.5) / (self.tf + 0.5) + 1),
-                dtype=np.float32,
-            )
+        self.idf = np.asarray(
+            a=np.log((self.count - self.tf + 0.5) / (self.tf + 0.5) + 1),
+            dtype=np.float32,
         )
 
     def _transform(self, matrix: csr_matrix) -> csr_matrix:
         """Transform a count matrix to a bm25 matrix."""
-        len_documents = (matrix).sum(axis=1)
-        regularization = np.squeeze(
-            a=np.asarray(
-                a=(
-                    self.k1 * (1 - self.b + self.b * (len_documents / self.average_len))
-                ).flatten()
-            )
+        len_documents = np.asarray(a=matrix.sum(axis=1)).ravel()
+        regularization = np.asarray(
+            a=self.k1 * (1 - self.b + self.b * (len_documents / self.average_len)),
+            dtype=np.float32,
         )
 
-        denominator = matrix.tocsc()
-        denominator.data += np.take(a=regularization, indices=denominator.indices)
-        matrix.data = (
-            (matrix.data * (self.k1 + 1)) / denominator.tocsr().data
-        ) + self.epsilon
+        # Broadcast the per-document regularization over the stored entries.
+        denominator = matrix.data + np.repeat(
+            a=regularization, repeats=np.diff(matrix.indptr)
+        )
+        matrix.data = ((matrix.data * (self.k1 + 1)) / denominator) + self.epsilon
 
-        matrix = matrix.multiply(other=self.idf).tocsr()
+        matrix.data *= np.take(a=self.idf, indices=matrix.indices)
         inplace_csr_row_normalize_l2(matrix)
         return matrix

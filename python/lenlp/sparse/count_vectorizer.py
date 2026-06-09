@@ -89,31 +89,30 @@ class CountVectorizer:
         self.sparse_matrix.fit(raw_documents)
         return self
 
+    def _to_csr(
+        self, num_rows: int, data: np.ndarray, indices: np.ndarray, indptr: np.ndarray
+    ) -> csr_matrix:
+        """Wrap the CSR arrays built in Rust without copying them."""
+        matrix = csr_matrix(
+            arg1=(data, indices, indptr),
+            shape=(num_rows, self.sparse_matrix.get_num_cols()),
+            dtype=np.float32,
+        )
+        # Rust sorts the column indices of each row.
+        matrix.has_sorted_indices = True
+        return matrix
+
     def transform(self, raw_documents: list[str]) -> csr_matrix:
         """Transform documents to document-term matrix."""
         if not self.fitted:
             raise ValueError("Call fit method before calling transform method.")
 
-        values, row_indices, column_indices = self.sparse_matrix.transform(
-            raw_documents
-        )
-
-        return csr_matrix(
-            arg1=(values, (row_indices, column_indices)),
-            shape=(len(raw_documents), self.sparse_matrix.get_num_cols()),
-            dtype=np.float32,
-        )
+        data, indices, indptr = self.sparse_matrix.transform(raw_documents)
+        return self._to_csr(len(raw_documents), data, indices, indptr)
 
     def fit_transform(self, raw_documents: list[str]) -> csr_matrix:
-        """Learn the vocabulary dictionary and return the CountVectorizer object."""
+        """Learn the vocabulary dictionary and return the document-term matrix."""
         self.fitted = True
 
-        values, row_indices, column_indices = self.sparse_matrix.fit_transform(
-            raw_documents
-        )
-
-        return csr_matrix(
-            arg1=(values, (row_indices, column_indices)),
-            shape=(len(raw_documents), self.sparse_matrix.get_num_cols()),
-            dtype=np.float32,
-        )
+        data, indices, indptr = self.sparse_matrix.fit_transform(raw_documents)
+        return self._to_csr(len(raw_documents), data, indices, indptr)

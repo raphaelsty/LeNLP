@@ -14,7 +14,7 @@ use std::collections::HashMap;
 /// A hashmap with the words as keys and the number of times they appear as values.
 #[pyfunction]
 pub fn rscount(text: Vec<String>) -> HashMap<String, usize> {
-    let mut word_counter = HashMap::new();
+    let mut word_counter = HashMap::with_capacity(text.len());
     for word in text {
         *word_counter.entry(word).or_insert(0) += 1;
     }
@@ -32,7 +32,7 @@ pub fn rscount(text: Vec<String>) -> HashMap<String, usize> {
 /// A vector of hashmaps with the words as keys and the number of times they appear as values.
 #[pyfunction]
 pub fn rscount_many(texts: Vec<Vec<String>>) -> Vec<HashMap<String, usize>> {
-    texts.par_iter().map(|text| rscount(text.clone())).collect()
+    texts.into_par_iter().map(rscount).collect()
 }
 
 /// Registers all the above functions in a Python sub-module.

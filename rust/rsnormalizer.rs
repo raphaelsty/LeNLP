@@ -1,9 +1,10 @@
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 use rayon::prelude::*;
-use unidecode::unidecode;
+use unidecode::unidecode_char;
 
-/// Normalize text by converting to lowercase, removing punctuation, and trimming whitespace.
+/// Normalize text by transliterating to ASCII, converting to lowercase,
+/// removing punctuation, and trimming whitespace.
 ///
 /// # Arguments
 ///
@@ -14,13 +15,23 @@ use unidecode::unidecode;
 /// A String that holds the normalized text.
 #[pyfunction]
 pub fn rsnormalize(text: &str) -> String {
-    unidecode(text)
-        .to_lowercase()
-        .chars()
-        .filter(|c| !c.is_ascii_punctuation())
-        .collect::<String>()
-        .trim()
-        .to_string()
+    // Single pass: unidecode emits ASCII, so lowercasing and punctuation
+    // filtering can happen per char without intermediate allocations.
+    let mut normalized = String::with_capacity(text.len());
+    for c in text.chars() {
+        for ascii in unidecode_char(c).chars() {
+            if !ascii.is_ascii_punctuation() {
+                normalized.push(ascii.to_ascii_lowercase());
+            }
+        }
+    }
+
+    let trimmed = normalized.trim();
+    if trimmed.len() == normalized.len() {
+        normalized
+    } else {
+        trimmed.to_string()
+    }
 }
 
 /// Normalize multiple texts.
@@ -51,6 +62,7 @@ mod tests {
     fn test_rsnormalize() {
         assert_eq!(rsnormalize("Hello World! 😀"), "hello world");
         assert_eq!(rsnormalize("1,2,3,4"), "1234");
+        assert_eq!(rsnormalize("Déjà vu"), "deja vu");
     }
 
     #[test]

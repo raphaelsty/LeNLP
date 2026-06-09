@@ -75,15 +75,19 @@ class TfidfVectorizer(CountVectorizer):
         self.update(matrix=matrix)
         return self
 
-    def update(self, matrix: csr_matrix) -> csr_matrix:
+    def update(self, matrix: csr_matrix) -> None:
         """Update the idf values."""
-        tf = (matrix > 0).sum(axis=0)
+        # Stored entries are positive counts, so the document frequency of a
+        # term is the number of stored entries in its column.
+        document_frequency = np.bincount(
+            matrix.indices, minlength=matrix.shape[1]
+        )
         self.idf = (
-            np.squeeze(a=np.asarray(a=np.log((matrix.shape[0] + 1.0) / (tf + 1.0)))) + 1
+            np.log((matrix.shape[0] + 1.0) / (document_frequency + 1.0)) + 1
         )
 
     def _transform(self, matrix: csr_matrix) -> csr_matrix:
-        """Transform a count matrix to a bm25 matrix."""
+        """Transform a count matrix to a tf-idf matrix."""
         matrix.data *= np.take(
             a=self.idf,
             indices=matrix.indices,
@@ -94,31 +98,10 @@ class TfidfVectorizer(CountVectorizer):
 
     def transform(self, raw_documents: list[str]) -> csr_matrix:
         """Transform documents to document-term matrix."""
-        values, row_indices, column_indices = self.sparse_matrix.transform(
-            raw_documents
-        )
-        return self._transform(
-            matrix=csr_matrix(
-                arg1=(values, (row_indices, column_indices)),
-                shape=(len(raw_documents), self.sparse_matrix.get_num_cols()),
-                dtype=np.float32,
-            )
-        )
+        return self._transform(matrix=super().transform(raw_documents))
 
     def fit_transform(self, raw_documents: list[str]) -> csr_matrix:
-        """Learn the vocabulary dictionary and return the CountVectorizer object."""
-        values, row_indices, column_indices = self.sparse_matrix.fit_transform(
-            raw_documents
-        )
-
-        matrix = csr_matrix(
-            arg1=(values, (row_indices, column_indices)),
-            shape=(len(raw_documents), self.sparse_matrix.get_num_cols()),
-            dtype=np.float32,
-        )
-
+        """Learn the vocabulary dictionary and return the document-term matrix."""
+        matrix = super().fit_transform(raw_documents)
         self.update(matrix=matrix)
-
-        return self._transform(
-            matrix=matrix,
-        )
+        return self._transform(matrix=matrix)
