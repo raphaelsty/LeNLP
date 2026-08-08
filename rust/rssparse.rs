@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 // ---------------------------------------------------------------------------
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[pyclass(module = "lenlp.sparse.count_vectorizer")]
+#[pyclass(module = "lenlp.sparse.count_vectorizer", skip_from_py_object)]
 pub struct SparseMatrixBuilder {
     analyzer: String,
     n_sizes: Vec<usize>,
